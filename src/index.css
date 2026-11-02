@@ -1,0 +1,64 @@
+:root {
+  --bg-primary: #FAF7F2;
+  --bg-card: #FFFFFF;
+  --bg-subtle: #F5EFEB;
+  --bg-accent: #FDF9F6;
+  
+  --rose-soft: #F4E3E3;
+  --rose-antique: #C89595;
+  --rose-burnished: #A76D6D;
+  --rose-deep: #7D4848;
+
+  --cream: #FFFDF9;
+  --ivory: #FDFBF7;
+  --warm-white: #FCFBF9;
+  --delicate-beige: #EFE7DE;
+  --gold-subtle: #C9A96E;
+  --gold-light: #DFCA9B;
+
+  --text-primary: #342927;
+  --text-secondary: #6F625F;
+  --text-muted: #9E908D;
+  --border-light: #EBE1D8;
+  --border-delicate: #E2D5C8;
+
+  --font-serif: 'Cormorant Garamond', Georgia, 'Palatino Linotype', Palatino, serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  --shadow-subtle: 0 4px 20px -2px rgba(90, 60, 50, 0.05);
+  --shadow-elevated: 0 12px 30px -4px rgba(90, 60, 50, 0.08);
+  --radius-card: 16px;
+  --radius-btn: 10px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, textarea {
+  font-family: inherit;
+}
