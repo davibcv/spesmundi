@@ -49,32 +49,100 @@ export class AIService {
     };
   }
 
-  static async analyzeActivity(
+    static async analyzeActivity(
     narrative: string,
     childAge: DetailedAge,
     tree: KnowledgeNode
   ): Promise<AIAnalysisProposal> {
     const treeContext = TreeManager.getAiContext(tree);
+    const directKey = (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_GEMINI_API_KEY) || "";
 
-    const res = await fetch("/api/analyze-activity", {
+    try {
+      const res = await fetch("/api/analyze-activity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          narrative,
+          childAge,
+          treeContext
+        })
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+      if (res.ok && contentType.includes("application/json")) {
+        const data = await res.json();
+        return AIService.validateAIResponse(data, tree);
+      }
+    } catch {}
+
+    if (directKey && directKey.startsWith("AIza")) {
+      const directData = await AIService.callDirectGemini(narrative, childAge, treeContext, directKey);
+      return AIService.validateAIResponse(directData, tree);
+    }
+
+    throw new Error("Servidor de analise e chave de API do Gemini indisponiveis.");
+  }
+
+  private static async callDirectGemini(
+    narrative: string,
+    childAge: DetailedAge,
+    treeContext: any[],
+    apiKey: string
+  ): Promise<any> {
+    const systemPrompt = "Voce e o analista pedagogico do SpesMundi. Sua missao e analisar o relato de vivencia formativa da crianca e identificar com precisao quais ramos e folhas da arvore pedagogica do sistema foram efetivamente mobilizados. " +
+      "Regras obrigatorias:\n" +
+      "1. Use exclusivamente os IDs exatos informados na arvore de conhecimento fornecida.\n" +
+      "2. Se o relato for vago, puramente circunstancial ou insuficiente para evidenciar desenvolvimento pedagogico real, retorne insufficientInformation: true e deixe classifications como lista vazia ([]).\n" +
+      "3. Nao invente capacidades nem presuma fatos nao narrados.\n" +
+      "4. Atribua pontos coerentes entre 5 e 25 por no contemplado com justificativa clara e objetiva.\n" +
+      "Retorne rigorosamente apenas um objeto JSON com o seguinte formato:\n" +
+      "{\n" +
+      "  \"activitySummary\": \"resumo objetivo da vivencia\",\n" +
+      "  \"overallReasoning\": \"justificativa pedagogica geral fundamentada\",\n" +
+      "  \"confidence\": 0.9,\n" +
+      "  \"insufficientInformation\": false,\n" +
+      "  \"clarificationPrompt\": \"pergunta para os pais caso o relato seja vago\",\n" +
+      "  \"classifications\": [\n" +
+      "    { \"nodeId\": \"id-do-no\", \"points\": 15, \"reason\": \"evidencia observada no relato\" }\n" +
+      "  ]\n" +
+      "}\n" +
+      "Arvore pedagogica cadastrada:\n" + JSON.stringify(treeContext);
+
+    const userPrompt = "Idade da crianca: " + (childAge?.formatted || "Nao informada") + " (" + (childAge?.totalMonths || 0) + " meses).\nRelato: " + narrative.trim();
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=" + apiKey;
+
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        narrative,
-        childAge,
-        treeContext
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: systemPrompt + "\n\n--- DADOS DA ATIVIDADE ---\n" + userPrompt }]
+          }
+        ],
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
       })
     });
 
-    const contentType = res.headers.get("content-type") || "";
-    if (!res.ok || !contentType.includes("application/json")) {
+    if (!res.ok) {
       const errText = await res.text().catch(() => "");
-      throw new Error(`Servidor de analise retornou erro HTTP ${res.status}${errText ? `: ${errText}` : ""}`);
+      throw new Error("Erro na Gemini API direta (HTTP " + res.status + "): " + errText);
     }
 
     const data = await res.json();
-    return AIService.validateAIResponse(data, tree);
+    const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!candidateText) {
+      throw new Error("Resposta vazia da Gemini API.");
+    }
+
+    const parsed = JSON.parse(candidateText);
+    parsed.source = "gemini";
+    return parsed;
   }
+
 
   static fallbackLocalAnalysis(narrative: string, tree: KnowledgeNode, errorMessage?: string): AIAnalysisProposal {
     const lower = narrative.toLowerCase();
