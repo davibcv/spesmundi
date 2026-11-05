@@ -38,8 +38,9 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
       setCurrentProposal(proposal);
       setActiveNarrative(narrative.trim());
       setEditableAssignments(proposal.classifications.map(c => ({ ...c })));
-    } catch {
-      const fallback = AIService.fallbackLocalAnalysis(narrative.trim(), tree);
+    } catch (err: any) {
+      const errorMsg = err?.message || "Falha na comunicação com o servidor de IA";
+      const fallback = AIService.fallbackLocalAnalysis(narrative.trim(), tree, errorMsg);
       setCurrentProposal(fallback);
       setActiveNarrative(narrative.trim());
       setEditableAssignments(fallback.classifications.map(c => ({ ...c })));
@@ -219,12 +220,29 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
           marginBottom: '2.5rem',
           boxShadow: 'var(--shadow-subtle)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--rose-burnished)', marginBottom: '0.75rem' }}>
-            <Sparkles size={20} />
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-              Proposta Pedagógica da IA &mdash; Confirmação dos Pais
-            </h3>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", color: "var(--rose-burnished)" }}>
+              <Sparkles size={20} />
+              <h3 style={{ fontSize: "1.3rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
+                Proposta Pedagógica &mdash; Confirmação dos Pais
+              </h3>
+            </div>
+            {currentProposal.source === "gemini" ? (
+              <span style={{ fontSize: "0.75rem", padding: "0.25rem 0.6rem", borderRadius: "999px", backgroundColor: "#e0f2fe", color: "#0369a1", fontWeight: 600, border: "1px solid #bae6fd" }}>
+                ✨ Gemini API (Flash-Lite)
+              </span>
+            ) : (
+              <span style={{ fontSize: "0.75rem", padding: "0.25rem 0.6rem", borderRadius: "999px", backgroundColor: "#fef3c7", color: "#92400e", fontWeight: 600, border: "1px solid #fde68a" }}>
+                ⚠️ Contingência Local (Sem API)
+              </span>
+            )}
           </div>
+
+          {currentProposal.warningMessage && (
+            <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", borderRadius: "8px", backgroundColor: "#fffbeb", border: "1px solid #fde68a", color: "#b45309", fontSize: "0.85rem", lineHeight: 1.5 }}>
+              <strong>Atenção:</strong> {currentProposal.warningMessage}
+            </div>
+          )}
 
           <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.65, marginBottom: '1.5rem' }}>
             {currentProposal.overallReasoning}

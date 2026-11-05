@@ -1,101 +1,239 @@
 import React from "react";
 import { ActiveView } from "../types/education";
-import { Sparkles, Compass, TreePine, Award, Home } from "lucide-react";
+import { AuthUserProfile } from "../services/authService";
+import { Sparkles, Compass, TreePine, Award, Home, LogIn, LogOut, Cloud, RefreshCw, AlertCircle, X } from "lucide-react";
 
 interface NavbarProps {
   currentView: ActiveView;
   onNavigate: (view: ActiveView) => void;
   childName: string;
+  currentUser: AuthUserProfile | null;
+  isSyncing: boolean;
+  authLoading: boolean;
+  authError: string | null;
+  onClearError: () => void;
+  onLogin: () => void;
+  onLogout: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, childName }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  currentView,
+  onNavigate,
+  childName,
+  currentUser,
+  isSyncing,
+  authLoading,
+  authError,
+  onClearError,
+  onLogin,
+  onLogout
+}) => {
   const navItems = [
-    { id: "home" as ActiveView, label: "Início", icon: Home },
+    { id: "home" as ActiveView, label: "Inicio", icon: Home },
     { id: "activities" as ActiveView, label: "Atividades", icon: Compass },
     { id: "current-state" as ActiveView, label: "Estado Atual", icon: Award },
-    { id: "knowledge-tree" as ActiveView, label: "Árvore do Conhecimento", icon: TreePine },
+    { id: "knowledge-tree" as ActiveView, label: "Arvore do Conhecimento", icon: TreePine },
   ];
 
   return (
-    <header style={{
-      borderBottom: "1px solid var(--border-light)",
-      backgroundColor: "rgba(255, 253, 249, 0.92)",
-      backdropFilter: "blur(12px)",
-      position: "sticky",
-      top: 0,
-      zIndex: 40,
-      padding: "0.85rem 2rem",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between"
-    }}>
-      <div 
-        onClick={() => onNavigate("home")} 
-        style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "0.75rem" }}
-      >
-        <div style={{
-          width: "36px",
-          height: "36px",
-          borderRadius: "50%",
-          backgroundColor: "var(--rose-soft)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "var(--rose-deep)",
-          border: "1px solid var(--border-delicate)"
-        }}>
-          <Sparkles size={18} />
-        </div>
-        <div>
-          <span style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: "1.35rem",
-            fontWeight: 600,
-            color: "var(--text-primary)",
-            letterSpacing: "0.03em"
+    <>
+      <header style={{
+        borderBottom: "1px solid var(--border-light)",
+        backgroundColor: "rgba(255, 253, 249, 0.95)",
+        backdropFilter: "blur(12px)",
+        position: "sticky",
+        top: 0,
+        zIndex: 40,
+        padding: "0.85rem 2rem",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between"
+      }}>
+        <div 
+          onClick={() => onNavigate("home")} 
+          style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "0.75rem" }}
+        >
+          <div style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            backgroundColor: "var(--rose-soft)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--rose-deep)",
+            border: "1px solid var(--border-delicate)"
           }}>
-            Spes Mundi
-          </span>
-          <span style={{
-            display: "block",
-            fontSize: "0.72rem",
-            color: "var(--rose-burnished)",
-            letterSpacing: "0.05em",
-            textTransform: "uppercase"
-          }}>
-            Formação de {childName}
-          </span>
-        </div>
-      </div>
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <span style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: "1.35rem",
+              fontWeight: 600,
+              color: "var(--text-primary)",
+              letterSpacing: "0.03em"
+            }}>
+              Spes Mundi
+            </span>
+            <span style={{
+              display: "block",
+              fontSize: "0.72rem",
+              color: "var(--rose-burnished)",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase"
+            }}>
+              Formacao de {childName}
+            </span>
+              <span style={{ display: "inline-block", marginLeft: "0.4rem", padding: "0.1rem 0.4rem", fontSize: "0.65rem", fontWeight: 700, borderRadius: "4px", backgroundColor: "var(--rose-soft)", color: "var(--rose-deep)", border: "1px solid var(--border-delicate)" }}>v0.8</span>
+            </div>
+          </div>
 
-      <nav style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentView === item.id;
-          return (
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <nav style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onNavigate(item.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.45rem",
+                    padding: "0.55rem 0.95rem",
+                    borderRadius: "var(--radius-btn)",
+                    fontSize: "0.88rem",
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? "var(--rose-deep)" : "var(--text-secondary)",
+                    backgroundColor: isActive ? "var(--rose-soft)" : "transparent",
+                    border: isActive ? "1px solid var(--border-delicate)" : "1px solid transparent",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  <Icon size={16} color={isActive ? "var(--rose-deep)" : "var(--rose-burnished)"} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <div style={{ width: "1px", height: "24px", backgroundColor: "var(--border-light)" }} />
+
+          {authLoading ? (
+            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Carregando...</div>
+          ) : currentUser ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                {isSyncing ? (
+                  <RefreshCw size={14} className="spin" color="var(--rose-burnished)" />
+                ) : (
+                  <Cloud size={14} color="#2e7d32" />
+                )}
+                <span>{isSyncing ? "Sincronizando..." : "Sincronizado"}</span>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                {currentUser.photoURL ? (
+                  <img
+                    src={currentUser.photoURL}
+                    alt={currentUser.displayName || "Usuario"}
+                    style={{ width: "30px", height: "30px", borderRadius: "50%", border: "1px solid var(--border-delicate)" }}
+                  />
+                ) : (
+                  <div style={{
+                    width: "30px",
+                    height: "30px",
+                    borderRadius: "50%",
+                    backgroundColor: "var(--rose-soft)",
+                    color: "var(--rose-deep)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.8rem",
+                    fontWeight: 600
+                  }}>
+                    {currentUser.displayName ? currentUser.displayName[0].toUpperCase() : "U"}
+                  </div>
+                )}
+                <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "var(--text-primary)", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {currentUser.displayName || currentUser.email || "Conectado"}
+                </span>
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  title="Desconectar"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0.35rem",
+                    borderRadius: "6px",
+                    backgroundColor: "transparent",
+                    color: "var(--text-muted)",
+                    cursor: "pointer"
+                  }}
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            </div>
+          ) : (
             <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
+              type="button"
+              onClick={onLogin}
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "0.45rem",
-                padding: "0.55rem 0.95rem",
-                borderRadius: "var(--radius-btn)",
-                fontSize: "0.88rem",
-                fontWeight: isActive ? 600 : 400,
-                color: isActive ? "var(--rose-deep)" : "var(--text-secondary)",
-                backgroundColor: isActive ? "var(--rose-soft)" : "transparent",
-                border: isActive ? "1px solid var(--border-delicate)" : "1px solid transparent",
-                transition: "all 0.2s ease"
+                gap: "0.5rem",
+                padding: "0.5rem 1rem",
+                borderRadius: "8px",
+                backgroundColor: "var(--rose-antique)",
+                color: "#FFF",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 2px 6px rgba(163, 64, 80, 0.25)"
               }}
             >
-              <Icon size={16} color={isActive ? "var(--rose-deep)" : "var(--rose-burnished)"} />
-              <span>{item.label}</span>
+              <LogIn size={15} />
+              <span>Entrar com Google</span>
             </button>
-          );
-        })}
-      </nav>
-    </header>
+          )}
+        </div>
+      </header>
+
+      {authError && (
+        <div style={{
+          backgroundColor: "#fef2f2",
+          borderBottom: "1px solid #fecaca",
+          padding: "0.6rem 2rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          color: "#991b1b",
+          fontSize: "0.83rem"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <AlertCircle size={16} />
+            <span>{authError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={onClearError}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#991b1b",
+              display: "flex",
+              alignItems: "center"
+            }}
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+    </>
   );
 };

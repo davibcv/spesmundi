@@ -45,6 +45,8 @@ export interface AIAnalysisProposal {
   confidence: number;
   insufficientInformation: boolean;
   clarificationPrompt?: string;
+  source?: "gemini" | "local-fallback";
+  warningMessage?: string;
 }
 
 export interface ActivityRecord {

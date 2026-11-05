@@ -1,0 +1,11 @@
+{
+  "name": "SpesMundi Dev Container",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "SpesMundi Application",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "postStartCommand": "nohup bash .devcontainer/ensure-public-port.sh > /tmp/ensure-public-port.log 2>&1 &"
+}

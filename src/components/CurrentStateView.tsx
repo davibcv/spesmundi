@@ -23,10 +23,13 @@ export const CurrentStateView: React.FC<CurrentStateViewProps> = ({
     setExpandedNodes(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const rootTotalPoints = treeWithScores.totalPoints ?? treeWithScores.points ?? 0;
+
   const renderTreeItem = (node: KnowledgeNode, depth = 0) => {
     if (node.isArchived) return null;
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = !!expandedNodes[node.id];
+    const nodePoints = node.totalPoints ?? node.points ?? 0;
 
     return (
       <div key={node.id} style={{ marginLeft: depth > 0 ? '1.5rem' : '0', marginTop: '0.65rem' }}>
@@ -97,7 +100,7 @@ export const CurrentStateView: React.FC<CurrentStateViewProps> = ({
               border: '1px solid var(--border-delicate)',
               color: 'var(--rose-burnished)'
             }}>
-              <span>Nível {node.level ?? 0}</span>
+              <span>Nível {node.level ?? 1}</span>
             </div>
 
             <div style={{
@@ -108,10 +111,11 @@ export const CurrentStateView: React.FC<CurrentStateViewProps> = ({
               fontWeight: 600,
               padding: '0.25rem 0.65rem',
               borderRadius: '6px',
-              backgroundColor: 'var(--rose-antique)',
-              color: '#FFF'
+              backgroundColor: nodePoints > 0 ? 'var(--rose-antique)' : 'var(--bg-accent)',
+              color: nodePoints > 0 ? '#FFF' : 'var(--text-muted)',
+              border: nodePoints > 0 ? 'none' : '1px solid var(--border-delicate)'
             }}>
-              <span>{node.points ?? 0} pts</span>
+              <span>{nodePoints} pts</span>
             </div>
           </div>
         </div>
@@ -152,11 +156,11 @@ export const CurrentStateView: React.FC<CurrentStateViewProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--rose-burnished)', marginBottom: '0.5rem' }}>
             <Award size={18} />
             <span style={{ fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Pontuação Geral
+              Pontuação Geral Acumulada
             </span>
           </div>
           <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {treeWithScores.points ?? 0} <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-muted)' }}>pts</span>
+            {rootTotalPoints} <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-muted)' }}>pts</span>
           </div>
         </div>
 
@@ -174,7 +178,7 @@ export const CurrentStateView: React.FC<CurrentStateViewProps> = ({
             </span>
           </div>
           <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--rose-deep)' }}>
-            Nível {treeWithScores.level ?? 0}
+            Nível {treeWithScores.level ?? 1}
           </div>
         </div>
       </div>
