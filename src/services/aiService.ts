@@ -55,7 +55,9 @@ export class AIService {
     tree: KnowledgeNode
   ): Promise<AIAnalysisProposal> {
     const treeContext = TreeManager.getAiContext(tree);
-    const directKey = (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_GEMINI_API_KEY) || "";
+    const env = (typeof import.meta !== "undefined" && (import.meta as any).env) || {};
+    const primaryKey = env.VITE_GEMINI_API_KEY || "";
+    const backupKey = env.VITE_GEMINI_BACKUP_API_KEY || "";
 
     try {
       const res = await fetch("/api/analyze-activity", {
@@ -75,12 +77,32 @@ export class AIService {
       }
     } catch {}
 
-    if (directKey && directKey.startsWith("AIza")) {
-      const directData = await AIService.callDirectGemini(narrative, childAge, treeContext, directKey);
-      return AIService.validateAIResponse(directData, tree);
+    const keysToTry: { key: string; label: string }[] = [];
+    if (primaryKey && primaryKey.startsWith("AIza")) {
+      keysToTry.push({ key: primaryKey, label: "chave primária" });
+    }
+    if (backupKey && backupKey.startsWith("AIza") && backupKey !== primaryKey) {
+      keysToTry.push({ key: backupKey, label: "chave reserva" });
     }
 
-    throw new Error("Servidor de analise e chave de API do Gemini indisponiveis.");
+    let lastError = "";
+    for (const { key, label } of keysToTry) {
+      try {
+        const directData = await AIService.callDirectGemini(narrative, childAge, treeContext, key);
+        return AIService.validateAIResponse(directData, tree);
+      } catch (err: any) {
+        lastError = err?.message || String(err);
+        console.warn("Falha na chamada direta com " + label + ": " + lastError);
+      }
+    }
+
+    if (keysToTry.length > 0) {
+      const fallback = AIService.fallbackLocalAnalysis(narrative, tree);
+      fallback.warningMessage = "Atenção: Falha na API direta do Gemini (todas as chaves tentadas falharam). Último erro: " + lastError;
+      return fallback;
+    }
+
+    throw new Error("Servidor de análise e chaves de API do Gemini indisponíveis.");
   }
 
   private static async callDirectGemini(
@@ -109,7 +131,7 @@ export class AIService {
       "Arvore pedagogica cadastrada:\n" + JSON.stringify(treeContext);
 
     const userPrompt = "Idade da crianca: " + (childAge?.formatted || "Nao informada") + " (" + (childAge?.totalMonths || 0) + " meses).\nRelato: " + narrative.trim();
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=" + apiKey;
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" + apiKey;
 
     const res = await fetch(url, {
       method: "POST",
@@ -129,7 +151,7 @@ export class AIService {
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
-      throw new Error("Erro na Gemini API direta (HTTP " + res.status + "): " + errText);
+      throw new Error("HTTP " + res.status + ": " + errText);
     }
 
     const data = await res.json();
@@ -142,7 +164,6 @@ export class AIService {
     parsed.source = "gemini";
     return parsed;
   }
-
 
   static fallbackLocalAnalysis(narrative: string, tree: KnowledgeNode, errorMessage?: string): AIAnalysisProposal {
     const lower = narrative.toLowerCase();

@@ -1,19 +1,32 @@
 import type { IncomingMessage, ServerResponse } from "http";
 
-function getResolvedApiKey(passedKey?: string): string {
-  if (passedKey && passedKey.startsWith("AIza")) return passedKey;
-  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith("AIza")) return process.env.GEMINI_API_KEY;
+export function getResolvedApiKeys(passedKey?: string): string[] {
+  const keys: string[] = [];
+  if (passedKey && passedKey.startsWith("AIza")) keys.push(passedKey);
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith("AIza") && !keys.includes(process.env.GEMINI_API_KEY)) {
+    keys.push(process.env.GEMINI_API_KEY);
+  }
+  if (process.env.GEMINI_BACKUP_API_KEY && process.env.GEMINI_BACKUP_API_KEY.startsWith("AIza") && !keys.includes(process.env.GEMINI_BACKUP_API_KEY)) {
+    keys.push(process.env.GEMINI_BACKUP_API_KEY);
+  }
   try {
     const fs = require("fs");
     const path = require("path");
     const envPath = path.resolve(process.cwd(), ".env");
     if (fs.existsSync(envPath)) {
       const content = fs.readFileSync(envPath, "utf8");
-      const match = content.match(/^(?:GEMINI_API_KEY|VITE_GEMINI_API_KEY)=(AIza[^\r\n\s]+)/m);
-      if (match) return match[1].trim();
+      const matchPrimary = content.match(/^(?:GEMINI_API_KEY|VITE_GEMINI_API_KEY)=(AIza[^\r\n\s]+)/m);
+      if (matchPrimary && !keys.includes(matchPrimary[1].trim())) keys.push(matchPrimary[1].trim());
+      const matchBackup = content.match(/^(?:GEMINI_BACKUP_API_KEY|VITE_GEMINI_BACKUP_API_KEY)=(AIza[^\r\n\s]+)/m);
+      if (matchBackup && !keys.includes(matchBackup[1].trim())) keys.push(matchBackup[1].trim());
     }
   } catch {}
-  return "";
+  return keys;
+}
+
+export function getResolvedApiKey(passedKey?: string): string {
+  const keys = getResolvedApiKeys(passedKey);
+  return keys.length > 0 ? keys[0] : "";
 }
 
 function readRequestBody(req: IncomingMessage): Promise<string> {
@@ -54,12 +67,12 @@ async function callGeminiWithRetry(url: string, payload: any, maxRetries = 3): P
 }
 
 export async function handleAnalyzeActivity(req: IncomingMessage, res: ServerResponse, apiKey: string) {
-  const resolvedKey = getResolvedApiKey(apiKey);
   res.setHeader("Content-Type", "application/json");
 
-  if (!resolvedKey) {
+  const resolvedKeys = getResolvedApiKeys(apiKey);
+  if (resolvedKeys.length === 0) {
     res.statusCode = 500;
-    res.end(JSON.stringify({ error: "GEMINI_API_KEY nao configurada no servidor." }));
+    res.end(JSON.stringify({ error: "Nenhuma chave de API do Gemini configurada no servidor." }));
     return;
   }
 
@@ -95,24 +108,36 @@ export async function handleAnalyzeActivity(req: IncomingMessage, res: ServerRes
 
     const userPrompt = "Idade da crianca: " + (childAge?.formatted || "Nao informada") + " (" + (childAge?.totalMonths || 0) + " meses).\nRelato: " + narrative.trim();
 
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=" + resolvedKey;
+    let geminiRes: Response | null = null;
+    let lastErrorText = "";
 
-    const geminiRes = await callGeminiWithRetry(url, {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: systemPrompt + "\n\n--- DADOS DA ATIVIDADE ---\n" + userPrompt }]
+    for (const key of resolvedKeys) {
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" + key;
+      try {
+        geminiRes = await callGeminiWithRetry(url, {
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: systemPrompt + "\n\n--- DADOS DA ATIVIDADE ---\n" + userPrompt }]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        }, 2);
+        if (geminiRes && geminiRes.ok) break;
+        if (geminiRes) {
+          lastErrorText = await geminiRes.text().catch(() => "");
         }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json"
+      } catch (err: any) {
+        lastErrorText = err?.message || String(err);
       }
-    }, 4);
+    }
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      res.statusCode = geminiRes.status;
-      res.end(JSON.stringify({ error: "Erro na Gemini API (HTTP " + geminiRes.status + ")", details: errText }));
+    if (!geminiRes || !geminiRes.ok) {
+      const status = geminiRes ? geminiRes.status : 503;
+      res.statusCode = status;
+      res.end(JSON.stringify({ error: "Erro na Gemini API (HTTP " + status + ")", details: lastErrorText }));
       return;
     }
 
