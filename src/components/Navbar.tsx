@@ -85,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }}>
               Formacao de {childName}
             </span>
-              <span style={{ display: "inline-block", marginLeft: "0.4rem", padding: "0.1rem 0.4rem", fontSize: "0.65rem", fontWeight: 700, borderRadius: "4px", backgroundColor: "var(--rose-soft)", color: "var(--rose-deep)", border: "1px solid var(--border-delicate)" }}>v0.8</span>
+              <span style={{ display: "inline-block", marginLeft: "0.4rem", padding: "0.1rem 0.4rem", fontSize: "0.65rem", fontWeight: 700, borderRadius: "4px", backgroundColor: "var(--rose-soft)", color: "var(--rose-deep)", border: "1px solid var(--border-delicate)" }}>v 0.8.1</span>
             </div>
           </div>
 
