@@ -3,6 +3,8 @@ import { CheckCircle2, Sparkles, BookOpen, Clock, Trash2, Check, RefreshCw, Repe
 import { KnowledgeNode, ActivityRecord, AIAnalysisProposal, DetailedAge, NodeScoreAssignment, ConsolidationLevel, RecurringActivity, CONSOLIDATION_LEVELS_META } from '../types/education';
 import { ConsolidationRuler } from './ConsolidationRuler';
 import { AIService } from '../services/aiService';
+import { InitialAlignmentModal } from './InitialAlignmentModal';
+import { InitialAlignmentRawItem, InitialAlignmentBatchResult } from '../types/education';
 
 interface ActivitiesViewProps {
   childName: string;
@@ -11,6 +13,7 @@ interface ActivitiesViewProps {
   activities: ActivityRecord[];
   onSaveActivity: (activity: ActivityRecord) => void;
   onDeleteActivity: (id: string) => void;
+  onApplyInitialAlignment?: (rawItems: InitialAlignmentRawItem[], result: InitialAlignmentBatchResult) => void;
   recurringActivities?: RecurringActivity[];
   onSaveRecurringActivity?: (desc: string) => void;
   onRecordRecurringUsage?: (id: string) => void;
@@ -24,11 +27,13 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
   activities,
   onSaveActivity,
   onDeleteActivity,
+  onApplyInitialAlignment,
   recurringActivities = [],
   onSaveRecurringActivity,
   onRecordRecurringUsage,
   onDeleteRecurringActivity
 }) => {
+  const [isAlignmentModalOpen, setIsAlignmentModalOpen] = useState(false);
   const [narrative, setNarrative] = useState('');
   const [activityDate, setActivityDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -156,9 +161,33 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
   return (
     <div style={{ maxWidth: '880px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
       <div style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2.5rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-          Atividades Cotidianas
-        </h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <h1 style={{ fontSize: "2.5rem", color: "var(--text-primary)", margin: 0 }}>
+            Atividades Cotidianas
+          </h1>
+          <button
+            type="button"
+            onClick={() => setIsAlignmentModalOpen(true)}
+            title="Alinhamento Inicial de Aprendizados"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              padding: "0.6rem 1.1rem",
+              borderRadius: "8px",
+              backgroundColor: "var(--bg-accent)",
+              border: "1px solid var(--border-delicate)",
+              color: "var(--text-primary)",
+              cursor: "pointer",
+              fontSize: "0.88rem",
+              fontWeight: 500,
+              boxShadow: "var(--shadow-subtle)"
+            }}
+          >
+            <Clock size={16} color="var(--rose-burnished)" />
+            <span>🕒 Alinhamento Inicial</span>
+          </button>
+        </div>
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.6 }}>
           Registre com naturalidade os momentos educativos, conversas e vivências com {childName} ({childAge.formatted}).
         </p>
@@ -549,6 +578,16 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
           </div>
         )}
       </div>
+          {onApplyInitialAlignment && (
+        <InitialAlignmentModal
+          isOpen={isAlignmentModalOpen}
+          onClose={() => setIsAlignmentModalOpen(false)}
+          childName={childName}
+          childAge={childAge}
+          tree={tree}
+          onApplyAlignment={onApplyInitialAlignment}
+        />
+      )}
     </div>
   );
 };

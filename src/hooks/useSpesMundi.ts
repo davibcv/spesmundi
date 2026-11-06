@@ -1,3 +1,4 @@
+import { InitialAlignmentBatchResult, InitialAlignmentRawItem } from "../types/education";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { SpesMundiStorageState, ChildProfile, KnowledgeNode, ActivityRecord, DetailedAge } from "../types/education";
 import { StorageService } from "../services/storageService";
@@ -159,6 +160,56 @@ export function useSpesMundi() {
     syncState(newState);
   }, [syncState]);
 
+
+  const applyInitialAlignment = useCallback((
+    rawItems: InitialAlignmentRawItem[],
+    batchResult: InitialAlignmentBatchResult
+  ) => {
+    const current = StorageService.loadState();
+    const now = new Date().toISOString();
+    const newActivities: ActivityRecord[] = [];
+
+    for (let i = 0; i < rawItems.length; i++) {
+      const raw = rawItems[i];
+      const evaluated = batchResult.evaluatedItems.find(e => e.rawItemId === raw.id) || batchResult.evaluatedItems[i];
+      const classifications = evaluated ? evaluated.classifications : [];
+
+      const assignments = classifications.map(cls => ({
+        nodeId: cls.nodeId,
+        nodeName: cls.nodeName,
+        points: cls.points,
+        reason: cls.reason
+      }));
+      newActivities.push({
+        id: "align-" + Date.now() + "-" + i,
+        date: now,
+        activityDate: raw.observedDate || raw.startDate || now.split("T")[0],
+        narrative: "[Alinhamento Inicial] " + raw.learningDescription,
+        consolidationLevel: (raw.consolidationLevel || 3) as any,
+        confirmedAssignments: assignments,
+        isConfirmed: true,
+        confirmedAt: now,
+        aiProposal: {
+          activitySummary: evaluated?.pedagogicalEvaluation || "Registro retrospectivo consolidado no alinhamento inicial.",
+          classifications: assignments,
+          overallReasoning: "Alinhamento inicial retrospectivo de marcos de aprendizado.",
+          confidence: 0.95,
+          insufficientInformation: false,
+          source: "local-fallback"
+        },
+        createdAt: now,
+        updatedAt: now
+      });
+    }
+
+    const newState = {
+      ...current,
+      activities: [...newActivities, ...current.activities]
+    };
+    syncState(newState);
+    return newActivities.length;
+  }, [syncState]);
+
   const deleteActivity = useCallback((activityId: string) => {
     const current = StorageService.loadState();
     const newState = {
@@ -221,6 +272,7 @@ export function useSpesMundi() {
     deleteTreeNode,
     saveActivity,
     deleteActivity,
+    applyInitialAlignment,
     saveRecurringActivity,
     recordRecurringActivityUsage,
     deleteRecurringActivity,

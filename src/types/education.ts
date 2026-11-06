@@ -143,3 +143,41 @@ export interface SpesMundiStorageState {
 }
 
 export type ActiveView = 'home' | 'activities' | 'current-state' | 'knowledge-tree';
+
+// --- Módulo de Alinhamento Inicial Retrospectivo ---
+
+export interface InitialAlignmentRawItem {
+  id: string;
+  originalText?: string;
+  startDate?: string;
+  observedDate?: string;
+  learningDescription: string;
+  consolidationLevel?: ConsolidationLevel;
+  frequency?: string;
+  repetitionFrequency?: string;
+  suggestedAreas: string[];
+}
+
+export interface InitialAlignmentAnalysisItem {
+  rawItemId: string;
+  startDate?: string;
+  learningDescription: string;
+  consolidationLevel?: ConsolidationLevel;
+  repetitionFrequency?: string;
+  suggestedAreas: string[];
+  pedagogicalEvaluation: string;
+  classifications: NodeScoreAssignment[];
+  unmatchedSuggestedAreas?: string[];
+  additionalAreasIdentified?: string[];
+  insufficientInformation?: boolean;
+}
+
+export interface InitialAlignmentBatchResult {
+  summary: string;
+  evaluatedItems: InitialAlignmentAnalysisItem[];
+  totalPointsAssigned?: number;
+  processedAt?: string;
+  source?: "gemini" | "local-fallback";
+  warningNotice?: string;
+  warningMessage?: string;
+}

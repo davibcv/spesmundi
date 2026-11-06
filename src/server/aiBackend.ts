@@ -29,7 +29,7 @@ export function getResolvedApiKey(passedKey?: string): string {
   return keys.length > 0 ? keys[0] : "";
 }
 
-function readRequestBody(req: IncomingMessage): Promise<string> {
+export function readRequestBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = "";
     req.on("data", chunk => { data += chunk; });
@@ -38,7 +38,7 @@ function readRequestBody(req: IncomingMessage): Promise<string> {
   });
 }
 
-async function callGeminiWithRetry(url: string, payload: any, maxRetries = 3): Promise<Response> {
+export async function callGeminiWithRetry(url: string, payload: any, maxRetries = 3): Promise<Response> {
   let lastResponse: Response | null = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
@@ -164,3 +164,4 @@ export async function handleAnalyzeActivity(req: IncomingMessage, res: ServerRes
 export function getApiKeyForServer(): string {
   return getResolvedApiKey();
 }
+export { handleAlignPastLearnings } from "./alignmentBackend";

@@ -199,3 +199,5 @@ export class AIService {
     };
   }
 }
+
+export { AlignmentService } from "./alignmentService";

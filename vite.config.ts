@@ -2,7 +2,7 @@ import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import fs from "fs";
 import path from "path";
-import { handleAnalyzeActivity } from "./src/server/aiBackend";
+import { handleAnalyzeActivity, handleAlignPastLearnings } from "./src/server/aiBackend";
 
 function readServerKey(): string {
   try {
@@ -22,6 +22,11 @@ function aiBackendPlugin(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = req.url || "";
+                if (url.startsWith("/api/align-past-learnings") && req.method === "POST") {
+          const apiKey = readServerKey();
+          handleAlignPastLearnings(req, res, apiKey);
+          return;
+        }
         if (url.startsWith("/api/analyze-activity") && req.method === "POST") {
           const apiKey = readServerKey();
           handleAnalyzeActivity(req, res, apiKey);

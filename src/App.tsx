@@ -44,6 +44,7 @@ export default function App() {
             tree={spes.state.tree}
             activities={spes.state.activities}
             onSaveActivity={spes.saveActivity}
+            onApplyInitialAlignment={spes.applyInitialAlignment}
             onDeleteActivity={spes.deleteActivity}
             recurringActivities={spes.state.recurringActivities || []}
             onSaveRecurringActivity={spes.saveRecurringActivity}
