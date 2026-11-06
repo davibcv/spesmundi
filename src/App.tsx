@@ -45,6 +45,10 @@ export default function App() {
             activities={spes.state.activities}
             onSaveActivity={spes.saveActivity}
             onDeleteActivity={spes.deleteActivity}
+            recurringActivities={spes.state.recurringActivities || []}
+            onSaveRecurringActivity={spes.saveRecurringActivity}
+            onRecordRecurringUsage={spes.recordRecurringActivityUsage}
+            onDeleteRecurringActivity={spes.deleteRecurringActivity}
           />
         )}
 

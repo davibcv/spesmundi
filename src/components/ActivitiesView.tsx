@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Sparkles, BookOpen, Clock, Trash2, Check, RefreshCw } from 'lucide-react';
-import { KnowledgeNode, ActivityRecord, AIAnalysisProposal, DetailedAge, NodeScoreAssignment } from '../types/education';
+import { CheckCircle2, Sparkles, BookOpen, Clock, Trash2, Check, RefreshCw, Repeat, Plus, ShieldCheck } from 'lucide-react';
+import { KnowledgeNode, ActivityRecord, AIAnalysisProposal, DetailedAge, NodeScoreAssignment, ConsolidationLevel, RecurringActivity, CONSOLIDATION_LEVELS_META } from '../types/education';
+import { ConsolidationRuler } from './ConsolidationRuler';
 import { AIService } from '../services/aiService';
 
 interface ActivitiesViewProps {
@@ -10,6 +11,10 @@ interface ActivitiesViewProps {
   activities: ActivityRecord[];
   onSaveActivity: (activity: ActivityRecord) => void;
   onDeleteActivity: (id: string) => void;
+  recurringActivities?: RecurringActivity[];
+  onSaveRecurringActivity?: (desc: string) => void;
+  onRecordRecurringUsage?: (id: string) => void;
+  onDeleteRecurringActivity?: (id: string) => void;
 }
 
 export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
@@ -18,7 +23,11 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
   tree,
   activities,
   onSaveActivity,
-  onDeleteActivity
+  onDeleteActivity,
+  recurringActivities = [],
+  onSaveRecurringActivity,
+  onRecordRecurringUsage,
+  onDeleteRecurringActivity
 }) => {
   const [narrative, setNarrative] = useState('');
   const [activityDate, setActivityDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -27,6 +36,13 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
   const [activeNarrative, setActiveNarrative] = useState('');
   const [editableAssignments, setEditableAssignments] = useState<NodeScoreAssignment[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [consolidationLevel, setConsolidationLevel] = useState<ConsolidationLevel>(3);
+  const [saveAsRecurring, setSaveAsRecurring] = useState(false);
+  const [activeConsolidationLevel, setActiveConsolidationLevel] = useState<ConsolidationLevel | undefined>(undefined);
+  const [newRecurringInput, setNewRecurringInput] = useState("");
+  const [showAddRecurring, setShowAddRecurring] = useState(false);
+  const [recurringSelectedLevels, setRecurringSelectedLevels] = useState<Record<string, ConsolidationLevel>>({});
+  const [processingRecurringId, setProcessingRecurringId] = useState<string | null>(null);
 
   const handleStartAnalysis = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +50,8 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
 
     setIsAnalyzing(true);
     try {
-      const proposal = await AIService.analyzeActivity(narrative.trim(), childAge, tree);
+      const proposal = await AIService.analyzeActivity(narrative.trim(), childAge, tree, consolidationLevel);
+      setActiveConsolidationLevel(consolidationLevel);
       setCurrentProposal(proposal);
       setActiveNarrative(narrative.trim());
       setEditableAssignments(proposal.classifications.map(c => ({ ...c })));
@@ -43,6 +60,7 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
       const fallback = AIService.fallbackLocalAnalysis(narrative.trim(), tree, errorMsg);
       setCurrentProposal(fallback);
       setActiveNarrative(narrative.trim());
+      setActiveConsolidationLevel(consolidationLevel);
       setEditableAssignments(fallback.classifications.map(c => ({ ...c })));
     } finally {
       setIsAnalyzing(false);
@@ -60,8 +78,13 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
   const handleConfirmAndSave = () => {
     if (!activeNarrative) return;
 
+    if (saveAsRecurring && onSaveRecurringActivity) {
+      onSaveRecurringActivity(activeNarrative);
+    }
+
     const newActivity: ActivityRecord = {
       id: 'act-' + Date.now(),
+      consolidationLevel: activeConsolidationLevel,
       date: new Date().toISOString(),
       activityDate: activityDate || new Date().toISOString().split('T')[0],
       narrative: activeNarrative,
@@ -81,6 +104,47 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
     setEditableAssignments([]);
     setIsSubmitted(true);
     setTimeout(() => setIsSubmitted(false), 3500);
+  };
+
+  const handleAddRecurringDirectly = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRecurringInput.trim()) return;
+    if (onSaveRecurringActivity) onSaveRecurringActivity(newRecurringInput.trim());
+    setNewRecurringInput("");
+    setShowAddRecurring(false);
+  };
+
+  const handleQuickLogRecurring = async (rec: RecurringActivity) => {
+    const chosenLevel = recurringSelectedLevels[rec.id] || 3;
+    setProcessingRecurringId(rec.id);
+    try {
+      let proposal: AIAnalysisProposal;
+      try {
+        proposal = await AIService.analyzeActivity(rec.description, childAge, tree, chosenLevel);
+      } catch {
+        proposal = AIService.fallbackLocalAnalysis(rec.description, tree);
+      }
+      const newAct: ActivityRecord = {
+        id: "act-rec-" + Date.now(),
+        date: new Date().toISOString(),
+        activityDate: new Date().toISOString().split("T")[0],
+        narrative: rec.description,
+        consolidationLevel: chosenLevel,
+        childAgeAtActivity: childAge,
+        aiProposal: proposal,
+        confirmedAssignments: proposal.classifications.length > 0 ? proposal.classifications : [{ nodeId: tree.id, nodeName: tree.name, points: chosenLevel >= 4 ? 15 : 10, reason: "Registro recorrente regularizado" }],
+        isConfirmed: true,
+        confirmedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      onSaveActivity(newAct);
+      if (onRecordRecurringUsage) onRecordRecurringUsage(rec.id);
+      setIsSubmitted(true);
+      setTimeout(() => setIsSubmitted(false), 3500);
+    } finally {
+      setProcessingRecurringId(null);
+    }
   };
 
   const handleDiscardProposal = () => {
@@ -157,6 +221,13 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
             }}
           />
 
+          <ConsolidationRuler value={consolidationLevel} onChange={lvl => setConsolidationLevel(lvl)} />
+          <div style={{ marginTop: "0.85rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <input type="checkbox" id="saveAsRecurring" checked={saveAsRecurring} onChange={e => setSaveAsRecurring(e.target.checked)} style={{ cursor: "pointer" }} />
+            <label htmlFor="saveAsRecurring" style={{ fontSize: "0.85rem", color: "var(--text-secondary)", cursor: "pointer" }}>
+              Salvar esta atividade no catálogo de atividades recorrentes
+            </label>
+          </div>
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -207,6 +278,60 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
             <span style={{ fontSize: '0.92rem' }}>
               Atividade confirmada com sucesso! Pontos incorporados ao histórico.
             </span>
+          </div>
+        )}
+      </div>
+
+      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-light)", borderRadius: "var(--radius-card)", padding: "1.75rem 2rem", boxShadow: "var(--shadow-subtle)", marginBottom: "2.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Repeat size={18} color="var(--rose-burnished)" />
+            <h2 style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
+              Atividades Recorrentes ({recurringActivities.length})
+            </h2>
+          </div>
+          <button type="button" onClick={() => setShowAddRecurring(!showAddRecurring)} style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.4rem 0.8rem", borderRadius: "6px", backgroundColor: "var(--bg-accent)", border: "1px solid var(--border-delicate)", fontSize: "0.82rem", color: "var(--text-primary)", cursor: "pointer" }}>
+            <Plus size={14} />
+            <span>{showAddRecurring ? "Cancelar" : "Nova Atividade Recorrente"}</span>
+          </button>
+        </div>
+        <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1rem", lineHeight: 1.5 }}>
+          Práticas frequentes (ex.: leitura de histórias, instrumentos musicais). Selecione o grau de consolidação de hoje e confirme no botão <strong>OK</strong>.
+        </p>
+        {showAddRecurring && (
+          <form onSubmit={handleAddRecurringDirectly} style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem" }}>
+            <input type="text" value={newRecurringInput} onChange={e => setNewRecurringInput(e.target.value)} placeholder="Descreva a atividade recorrente..." style={{ flex: 1, padding: "0.55rem 0.85rem", borderRadius: "6px", border: "1px solid var(--border-delicate)", backgroundColor: "var(--bg-accent)", color: "var(--text-primary)", fontSize: "0.88rem" }} />
+            <button type="submit" disabled={!newRecurringInput.trim()} style={{ padding: "0.55rem 1.1rem", borderRadius: "6px", backgroundColor: "var(--rose-antique)", color: "#FFF", fontSize: "0.85rem", fontWeight: 600, border: "none", cursor: newRecurringInput.trim() ? "pointer" : "not-allowed" }}>Adicionar</button>
+          </form>
+        )}
+        {recurringActivities.length === 0 ? (
+          <div style={{ padding: "1.25rem", border: "1px dashed var(--border-delicate)", borderRadius: "8px", textAlign: "center", color: "var(--text-muted)", fontSize: "0.88rem" }}>
+            Nenhuma atividade recorrente cadastrada ainda.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {recurringActivities.map(rec => (
+              <div key={rec.id} style={{ backgroundColor: "var(--bg-accent)", border: "1px solid var(--border-delicate)", borderRadius: "10px", padding: "0.85rem 1.1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "0.92rem" }}>{rec.description}</span>
+                    <span style={{ marginLeft: "0.6rem", fontSize: "0.74rem", color: "var(--text-muted)" }}>({rec.usageCount || 0} vezes registradas)</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <button type="button" onClick={() => handleQuickLogRecurring(rec)} disabled={processingRecurringId === rec.id} style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.4rem 0.9rem", borderRadius: "6px", backgroundColor: "var(--rose-antique)", color: "#FFF", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", border: "none" }}>
+                      {processingRecurringId === rec.id ? <RefreshCw size={13} className="animate-spin" /> : <Check size={14} />}
+                      <span>{processingRecurringId === rec.id ? "Salvando..." : "OK"}</span>
+                    </button>
+                    {onDeleteRecurringActivity && (
+                      <button type="button" onClick={() => onDeleteRecurringActivity(rec.id)} style={{ color: "var(--text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "0.2rem" }}>
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <ConsolidationRuler value={recurringSelectedLevels[rec.id] || 3} onChange={lvl => setRecurringSelectedLevels(prev => ({ ...prev, [rec.id]: lvl }))} compact />
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -379,6 +504,12 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
                         &bull; {item.childAgeAtActivity.formatted}
                       </span>
                     )}
+                    {item.consolidationLevel && CONSOLIDATION_LEVELS_META[item.consolidationLevel] && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", padding: "0.15rem 0.5rem", borderRadius: "999px", backgroundColor: "var(--rose-soft)", color: "var(--rose-deep)", fontSize: "0.72rem", fontWeight: 600, border: "1px solid var(--border-delicate)" }}>
+                          <ShieldCheck size={11} />
+                          Nível {item.consolidationLevel}: {CONSOLIDATION_LEVELS_META[item.consolidationLevel].shortLabel}
+                        </span>
+                      )}
                   </div>
                   <button
                     type='button'

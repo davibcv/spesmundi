@@ -79,7 +79,7 @@ export async function handleAnalyzeActivity(req: IncomingMessage, res: ServerRes
   try {
     const rawBody = await readRequestBody(req);
     const body = JSON.parse(rawBody || "{}");
-    const { narrative, childAge, treeContext } = body;
+    const { narrative, childAge, treeContext, consolidationLevel } = body;
 
     if (!narrative || typeof narrative !== "string" || !narrative.trim()) {
       res.statusCode = 400;
@@ -88,25 +88,26 @@ export async function handleAnalyzeActivity(req: IncomingMessage, res: ServerRes
     }
 
     const systemPrompt = "Voce e o analista pedagogico do SpesMundi. Sua missao e analisar o relato de vivencia formativa da crianca e identificar com precisao quais ramos e folhas da arvore pedagogica do sistema foram efetivamente mobilizados. " +
-      "Regras obrigatorias:\n" +
-      "1. Use exclusivamente os IDs exatos informados na arvore de conhecimento fornecida.\n" +
-      "2. Se o relato for vago, puramente circunstancial ou insuficiente para evidenciar desenvolvimento pedagogico real (ex: apenas brincou ou correu sem detalhes de aprendizagem), retorne insufficientInformation: true e deixe classifications como lista vazia ([]).\n" +
-      "3. Nao invente capacidades nem presuma fatos nao narrados.\n" +
-      "4. Atribua pontos coerentes entre 5 e 25 por no contemplado com justificativa clara e objetiva.\n" +
-      "Retorne rigorosamente apenas um objeto JSON com o seguinte formato:\n" +
-      "{\n" +
-      "  \"activitySummary\": \"resumo objetivo da vivencia\",\n" +
-      "  \"overallReasoning\": \"justificativa pedagogica geral fundamentada\",\n" +
-      "  \"confidence\": 0.9,\n" +
-      "  \"insufficientInformation\": false,\n" +
-      "  \"clarificationPrompt\": \"pergunta para os pais caso o relato seja vago\",\n" +
-      "  \"classifications\": [\n" +
-      "    { \"nodeId\": \"id-do-no\", \"points\": 15, \"reason\": \"evidencia observada no relato\" }\n" +
-      "  ]\n" +
-      "}\n" +
-      "Arvore pedagogica cadastrada:\n" + JSON.stringify(treeContext);
+    "Regras obrigatorias:\\n" +
+    "1. Use exclusivamente os IDs exatos informados na arvore de conhecimento fornecida.\\n" +
+    "2. Se o relato for vago, puramente circunstancial ou insuficiente para evidenciar desenvolvimento pedagogico real, retorne insufficientInformation: true e deixe classifications como lista vazia ([]).\\n" +
+    "3. Nao invente capacidades nem presuma fatos nao narrados.\\n" +
+    "4. Atribua pontos coerentes entre 5 e 25 por no contemplado com justificativa clara e objetiva.\\n" +
+    "5. REGUA DE CONSOLIDACAO DO APRENDIZADO (1 a 5): O responsavel informa o grau de consolidacao (1 a 5). Utilize essa informacao para orientar a interpretacao pedagogica e calibrar a pontuacao.\\n" +
+    "Retorne rigorosamente apenas um objeto JSON com o seguinte formato:\\n" +
+    "{\\n" +
+    "  \"activitySummary\": \"resumo objetivo da vivencia\",\\n" +
+    "  \"overallReasoning\": \"justificativa pedagogica geral fundamentada\",\\n" +
+    "  \"confidence\": 0.9,\\n" +
+    "  \"insufficientInformation\": false,\\n" +
+    "  \"clarificationPrompt\": \"pergunta para os pais caso o relato seja vago\",\\n" +
+    "  \"classifications\": [\\n" +
+    "    { \"nodeId\": \"id-do-no\", \"points\": 15, \"reason\": \"evidencia observada no relato\" }\\n" +
+    "  ]\\n" +
+    "}\\n" +
+    "Arvore pedagogica cadastrada:\\n" + JSON.stringify(treeContext);
 
-    const userPrompt = "Idade da crianca: " + (childAge?.formatted || "Nao informada") + " (" + (childAge?.totalMonths || 0) + " meses).\nRelato: " + narrative.trim();
+    const userPrompt = "Idade da crianca: " + (childAge?.formatted || "Nao informada") + " (" + (childAge?.totalMonths || 0) + " meses)." + (consolidationLevel ? "\nGrau de Consolidacao Informado: Nivel " + consolidationLevel + " de 5." : "") + "\nRelato: " + narrative.trim();
 
     let geminiRes: Response | null = null;
     let lastErrorText = "";

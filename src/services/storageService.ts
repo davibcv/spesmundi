@@ -1,4 +1,4 @@
-import { SpesMundiStorageState, ChildProfile, KnowledgeNode, ActivityRecord, LevelCalibrationConfig } from '../types/education';
+import { SpesMundiStorageState, ChildProfile, KnowledgeNode, ActivityRecord, LevelCalibrationConfig, RecurringActivity } from '../types/education';
 import { initialTree } from '../data/initialTree';
 
 const STORAGE_KEY = 'spes_mundi_data_v1';
@@ -25,6 +25,7 @@ export function createDefaultState(): SpesMundiStorageState {
     child: { ...DEFAULT_CHILD },
     tree: JSON.parse(JSON.stringify(initialTree)),
     activities: [],
+    recurringActivities: [],
     levelConfig: { ...DEFAULT_LEVEL_CONFIG },
     apiConfig: {}
   };
@@ -59,6 +60,9 @@ export class StorageService {
       const parsed = JSON.parse(raw);
       if (!parsed.child || !parsed.tree || !Array.isArray(parsed.activities)) {
         throw new Error('Esquema corrompido');
+      }
+      if (!Array.isArray(parsed.recurringActivities)) {
+        parsed.recurringActivities = [];
       }
       return parsed as SpesMundiStorageState;
     } catch {
@@ -108,6 +112,55 @@ export class StorageService {
     state.activities = state.activities.filter(a => a.id !== id);
     StorageService.saveState(state);
     return state.activities;
+  }
+
+
+  static getRecurringActivities(): RecurringActivity[] {
+    const state = StorageService.loadState();
+    return state.recurringActivities || [];
+  }
+
+  static saveRecurringActivity(description: string): RecurringActivity[] {
+    const cleanDesc = description.trim();
+    if (!cleanDesc) return StorageService.getRecurringActivities();
+    const state = StorageService.loadState();
+    if (!state.recurringActivities) state.recurringActivities = [];
+
+    const existing = state.recurringActivities.find(
+      r => r.description.trim().toLowerCase() === cleanDesc.toLowerCase()
+    );
+
+    if (!existing) {
+      const newRec: RecurringActivity = {
+        id: "rec-" + Date.now() + "-" + Math.random().toString(36).substr(2, 5),
+        description: cleanDesc,
+        createdAt: new Date().toISOString(),
+        usageCount: 0
+      };
+      state.recurringActivities.unshift(newRec);
+      StorageService.saveState(state);
+    }
+    return state.recurringActivities;
+  }
+
+  static recordRecurringActivityUsage(id: string): RecurringActivity[] {
+    const state = StorageService.loadState();
+    if (!state.recurringActivities) return [];
+    const item = state.recurringActivities.find(r => r.id === id);
+    if (item) {
+      item.usageCount = (item.usageCount || 0) + 1;
+      item.lastUsedAt = new Date().toISOString();
+      StorageService.saveState(state);
+    }
+    return state.recurringActivities;
+  }
+
+  static deleteRecurringActivity(id: string): RecurringActivity[] {
+    const state = StorageService.loadState();
+    if (!state.recurringActivities) return [];
+    state.recurringActivities = state.recurringActivities.filter(r => r.id !== id);
+    StorageService.saveState(state);
+    return state.recurringActivities;
   }
 
   static exportBackupJSON(): string {

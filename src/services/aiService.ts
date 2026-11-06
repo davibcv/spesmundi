@@ -1,4 +1,4 @@
-import { KnowledgeNode, AIAnalysisProposal, DetailedAge, NodeScoreAssignment } from "../types/education";
+import { KnowledgeNode, AIAnalysisProposal, DetailedAge, NodeScoreAssignment, ConsolidationLevel } from "../types/education";
 import { TreeManager } from "../domain/treeManager";
 
 export class AIService {
@@ -52,7 +52,8 @@ export class AIService {
     static async analyzeActivity(
     narrative: string,
     childAge: DetailedAge,
-    tree: KnowledgeNode
+    tree: KnowledgeNode,
+    consolidationLevel?: ConsolidationLevel
   ): Promise<AIAnalysisProposal> {
     const treeContext = TreeManager.getAiContext(tree);
     const env = (typeof import.meta !== "undefined" && (import.meta as any).env) || {};
@@ -66,7 +67,8 @@ export class AIService {
         body: JSON.stringify({
           narrative,
           childAge,
-          treeContext
+          treeContext,
+          consolidationLevel
         })
       });
 
@@ -88,7 +90,7 @@ export class AIService {
     let lastError = "";
     for (const { key, label } of keysToTry) {
       try {
-        const directData = await AIService.callDirectGemini(narrative, childAge, treeContext, key);
+        const directData = await AIService.callDirectGemini(narrative, childAge, treeContext, key, consolidationLevel);
         return AIService.validateAIResponse(directData, tree);
       } catch (err: any) {
         lastError = err?.message || String(err);
@@ -109,14 +111,11 @@ export class AIService {
     narrative: string,
     childAge: DetailedAge,
     treeContext: any[],
-    apiKey: string
+    apiKey: string,
+    consolidationLevel?: ConsolidationLevel
   ): Promise<any> {
     const systemPrompt = "Voce e o analista pedagogico do SpesMundi. Sua missao e analisar o relato de vivencia formativa da crianca e identificar com precisao quais ramos e folhas da arvore pedagogica do sistema foram efetivamente mobilizados. " +
-      "Regras obrigatorias:\n" +
-      "1. Use exclusivamente os IDs exatos informados na arvore de conhecimento fornecida.\n" +
-      "2. Se o relato for vago, puramente circunstancial ou insuficiente para evidenciar desenvolvimento pedagogico real, retorne insufficientInformation: true e deixe classifications como lista vazia ([]).\n" +
-      "3. Nao invente capacidades nem presuma fatos nao narrados.\n" +
-      "4. Atribua pontos coerentes entre 5 e 25 por no contemplado com justificativa clara e objetiva.\n" +
+       "Regras obrigatorias:\n1. Use exclusivamente os IDs exatos informados na arvore de conhecimento fornecida.\n" + "2. Se o relato for vago, puramente circunstancial ou insuficiente para evidenciar desenvolvimento pedagogico real, retorne insufficientInformation: true e deixe classifications como lista vazia ([]).\n" + "3. Nao invente capacidades nem presuma fatos nao narrados.\n" + "4. Atribua pontos coerentes entre 5 e 25 por no contemplado com justificativa clara e objetiva.\n" + "5. REGUA DE CONSOLIDACAO DO APRENDIZADO (1 a 5): O responsavel informa o grau de consolidacao (1 a 5). Utilize esta informacao para orientar a interpretacao pedagogica e calibrar a pontuacao.\n" +
       "Retorne rigorosamente apenas um objeto JSON com o seguinte formato:\n" +
       "{\n" +
       "  \"activitySummary\": \"resumo objetivo da vivencia\",\n" +
@@ -130,7 +129,7 @@ export class AIService {
       "}\n" +
       "Arvore pedagogica cadastrada:\n" + JSON.stringify(treeContext);
 
-    const userPrompt = "Idade da crianca: " + (childAge?.formatted || "Nao informada") + " (" + (childAge?.totalMonths || 0) + " meses).\nRelato: " + narrative.trim();
+    const userPrompt = "Idade da crianca: " + (childAge?.formatted || "Nao informada") + " (" + (childAge?.totalMonths || 0) + " meses)." + (consolidationLevel ? "\nGrau de Consolidacao Informado: Nivel " + consolidationLevel + " de 5." : "") + "\nRelato: " + narrative.trim();
     const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" + apiKey;
 
     const res = await fetch(url, {

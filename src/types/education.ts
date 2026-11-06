@@ -1,3 +1,54 @@
+
+export type ConsolidationLevel = 1 | 2 | 3 | 4 | 5;
+
+export interface ConsolidationLevelMeta {
+  level: ConsolidationLevel;
+  title: string;
+  shortLabel: string;
+  description: string;
+}
+
+export const CONSOLIDATION_LEVELS_META: Record<ConsolidationLevel, ConsolidationLevelMeta> = {
+  1: {
+    level: 1,
+    title: "Ponto 1 — Aprendizado inicial",
+    shortLabel: "Inicial",
+    description: "A criança acabou de aprender, apresentou dificuldade e provavelmente ainda não conseguiria reproduzir o conhecimento sozinha no dia seguinte."
+  },
+  2: {
+    level: 2,
+    title: "Ponto 2 — Pouco consolidado",
+    shortLabel: "Pouco consolidado",
+    description: "A criança demonstra alguma compreensão, mas ainda precisa de ajuda, orientação ou repetição frequente."
+  },
+  3: {
+    level: 3,
+    title: "Ponto 3 — Em desenvolvimento",
+    shortLabel: "Em desenvolvimento",
+    description: "A criança já consegue realizar a atividade, mas ainda apresenta oscilações ou necessita de algum auxílio."
+  },
+  4: {
+    level: 4,
+    title: "Ponto 4 — Bem consolidado",
+    shortLabel: "Bem consolidado",
+    description: "A criança realiza a atividade com segurança e pouca ou nenhuma ajuda, embora ainda possa apresentar alguma dificuldade ocasional."
+  },
+  5: {
+    level: 5,
+    title: "Ponto 5 — Plenamente consolidado",
+    shortLabel: "Plenamente consolidado",
+    description: "O conhecimento está bem estabelecido, sendo demonstrado com autonomia, segurança e consistência."
+  }
+};
+
+export interface RecurringActivity {
+  id: string;
+  description: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  usageCount: number;
+}
+
 export interface ChildProfile {
   id: string;
   name: string;
@@ -54,6 +105,7 @@ export interface ActivityRecord {
   date: string; // ISO string da criação
   activityDate: string; // YYYY-MM-DD do acontecimento real
   narrative: string;
+  consolidationLevel?: ConsolidationLevel;
   childAgeAtActivity?: DetailedAge;
   aiProposal?: AIAnalysisProposal;
   confirmedAssignments: NodeScoreAssignment[];
@@ -82,6 +134,7 @@ export interface SpesMundiStorageState {
   child: ChildProfile;
   tree: KnowledgeNode;
   activities: ActivityRecord[];
+  recurringActivities?: RecurringActivity[];
   levelConfig: LevelCalibrationConfig;
   apiConfig: {
     apiKey?: string;

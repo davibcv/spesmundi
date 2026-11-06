@@ -128,6 +128,22 @@ export function useSpesMundi() {
     syncState(newState);
   }, [syncState]);
 
+
+  const saveRecurringActivity = useCallback((description: string) => {
+    StorageService.saveRecurringActivity(description);
+    refresh();
+  }, [refresh]);
+
+  const recordRecurringActivityUsage = useCallback((id: string) => {
+    StorageService.recordRecurringActivityUsage(id);
+    refresh();
+  }, [refresh]);
+
+  const deleteRecurringActivity = useCallback((id: string) => {
+    StorageService.deleteRecurringActivity(id);
+    refresh();
+  }, [refresh]);
+
   const saveActivity = useCallback((activityData: Omit<ActivityRecord, "id" | "createdAt" | "updatedAt">) => {
     const current = StorageService.loadState();
     const newActivity: ActivityRecord = {
@@ -205,6 +221,9 @@ export function useSpesMundi() {
     deleteTreeNode,
     saveActivity,
     deleteActivity,
+    saveRecurringActivity,
+    recordRecurringActivityUsage,
+    deleteRecurringActivity,
     loginWithGoogle,
     logout
   };
