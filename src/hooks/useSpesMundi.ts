@@ -250,6 +250,27 @@ export function useSpesMundi() {
     }
   }, []);
 
+  const saveAndSyncNow = useCallback(async (): Promise<boolean> => {
+    const currentState = StorageService.loadState();
+    StorageService.saveState(currentState);
+    setState(currentState);
+
+    if (!currentUser) {
+      return true;
+    }
+
+    setIsSyncing(true);
+    try {
+      const ok = await FirebaseSyncService.syncRemoteState(currentUser.uid, currentState);
+      return ok;
+    } catch (err) {
+      console.warn("[useSpesMundi] Falha no salvamento manual no Firebase:", err);
+      return false;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [currentUser]);
+
   const clearAuthError = useCallback(() => {
     setAuthError(null);
   }, []);
@@ -265,6 +286,7 @@ export function useSpesMundi() {
     authLoading,
     authError,
     clearAuthError,
+    saveAndSyncNow,
     refresh,
     updateChild,
     addTreeNode,

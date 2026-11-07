@@ -24,6 +24,7 @@ export default function App() {
         onClearError={spes.clearAuthError}
         onLogin={spes.loginWithGoogle}
         onLogout={spes.logout}
+        onSaveAndSync={spes.saveAndSyncNow}
       />
 
       <main style={{ flex: 1 }}>

@@ -14,6 +14,7 @@ interface NavbarProps {
   onClearError: () => void;
   onLogin: () => void;
   onLogout: () => void;
+  onSaveAndSync?: () => Promise<boolean | void> | void | boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,8 +27,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   authError,
   onClearError,
   onLogin,
-  onLogout
+  onLogout,
+  onSaveAndSync
 }) => {
+  const [saveFeedback, setSaveFeedback] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  const handleManualSave = async () => {
+    if (saveFeedback === "saving") return;
+    setSaveFeedback("saving");
+    try {
+      if (onSaveAndSync) {
+        await onSaveAndSync();
+      }
+      setSaveFeedback("saved");
+      setTimeout(() => setSaveFeedback("idle"), 2500);
+    } catch {
+      setSaveFeedback("error");
+      setTimeout(() => setSaveFeedback("idle"), 3000);
+    }
+  };
   const navItems = [
     { id: "home" as ActiveView, label: "Inicio", icon: Home },
     { id: "activities" as ActiveView, label: "Atividades", icon: Compass },
@@ -117,6 +135,40 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               );
             })}
+            {onSaveAndSync && (
+              <button
+                type="button"
+                onClick={handleManualSave}
+                disabled={saveFeedback === "saving" || isSyncing}
+                title="Salvar alterações e sincronizar com o Firebase"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.55rem 0.85rem",
+                  borderRadius: "var(--radius-btn)",
+                  fontSize: "0.88rem",
+                  fontWeight: 600,
+                  cursor: saveFeedback === "saving" || isSyncing ? "not-allowed" : "pointer",
+                  color: saveFeedback === "saved" ? "#166534" : saveFeedback === "error" ? "#991b1b" : "var(--rose-deep)",
+                  backgroundColor: saveFeedback === "saved" ? "#dcfce7" : saveFeedback === "error" ? "#fee2e2" : "var(--rose-soft)",
+                  border: "1px solid var(--border-delicate)",
+                  transition: "all 0.2s ease",
+                  opacity: saveFeedback === "saving" || isSyncing ? 0.7 : 1
+                }}
+              >
+                <span style={{ fontSize: "1rem", lineHeight: 1 }}>💾</span>
+                <span>
+                  {saveFeedback === "saving" || isSyncing
+                    ? "Salvando..."
+                    : saveFeedback === "saved"
+                    ? "Salvo!"
+                    : saveFeedback === "error"
+                    ? "Erro ao salvar"
+                    : "Salvar"}
+                </span>
+              </button>
+            )}
           </nav>
 
           <div style={{ width: "1px", height: "24px", backgroundColor: "var(--border-light)" }} />
