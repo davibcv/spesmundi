@@ -141,7 +141,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={handleManualSave}
-                disabled={saveFeedback === "saving" || isSyncing}
+                disabled={saveFeedback === "saving"}
                 title="Salvar alterações e sincronizar com o Firebase"
                 style={{
                   display: "flex",
@@ -151,17 +151,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                   borderRadius: "var(--radius-btn)",
                   fontSize: "0.88rem",
                   fontWeight: 600,
-                  cursor: saveFeedback === "saving" || isSyncing ? "not-allowed" : "pointer",
+                  cursor: saveFeedback === "saving" ? "not-allowed" : "pointer",
                   color: saveFeedback === "saved" ? "#166534" : saveFeedback === "error" ? "#991b1b" : "var(--rose-deep)",
                   backgroundColor: saveFeedback === "saved" ? "#dcfce7" : saveFeedback === "error" ? "#fee2e2" : "var(--rose-soft)",
                   border: "1px solid var(--border-delicate)",
                   transition: "all 0.2s ease",
-                  opacity: saveFeedback === "saving" || isSyncing ? 0.7 : 1
+                  opacity: saveFeedback === "saving" ? 0.7 : 1
                 }}
               >
                 <span style={{ fontSize: "1rem", lineHeight: 1 }}>💾</span>
                 <span>
-                  {saveFeedback === "saving" || isSyncing
+                  {saveFeedback === "saving"
                     ? "Salvando..."
                     : saveFeedback === "saved"
                     ? "Salvo!"
