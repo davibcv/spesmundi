@@ -22,7 +22,7 @@ export class ScoringEngine {
 
       if (node.children && node.children.length > 0) {
         updatedChildren = node.children.map(calculate);
-        childrenSum = updatedChildren.reduce((acc, c) => acc + (c.totalPoints ?? c.points), 0);
+        childrenSum = updatedChildren.reduce((acc, c) => acc + (c.totalPoints ?? c.points ?? 0), 0);
       }
 
       const total = direct + childrenSum;

@@ -190,6 +190,16 @@ export function useSpesMundi() {
     const now = new Date().toISOString();
     const newActivities: ActivityRecord[] = [];
 
+    // Mapeia descrições para evitar duplicação em re-alinhamento retrospectivo
+    const existingDescMap = new Set(
+      rawItems.map(r => "[Alinhamento Inicial] " + r.learningDescription.trim())
+    );
+
+    // Remove atividades prévias de alinhamento com a mesma descrição para permitir reprocessamento limpo
+    const filteredPrevious = current.activities.filter(
+      a => !existingDescMap.has(a.narrative.trim())
+    );
+
     for (let i = 0; i < rawItems.length; i++) {
       const raw = rawItems[i];
       const evaluated = batchResult.evaluatedItems.find(e => e.rawItemId === raw.id) || batchResult.evaluatedItems[i];
@@ -201,11 +211,12 @@ export function useSpesMundi() {
         points: cls.points,
         reason: cls.reason
       }));
+
       newActivities.push({
         id: "align-" + Date.now() + "-" + i,
         date: now,
         activityDate: raw.observedDate || raw.startDate || now.split("T")[0],
-        narrative: "[Alinhamento Inicial] " + raw.learningDescription,
+        narrative: "[Alinhamento Inicial] " + raw.learningDescription.trim(),
         consolidationLevel: (raw.consolidationLevel || 3) as any,
         confirmedAssignments: assignments,
         isConfirmed: true,
@@ -216,7 +227,7 @@ export function useSpesMundi() {
           overallReasoning: "Alinhamento inicial retrospectivo de marcos de aprendizado.",
           confidence: 0.95,
           insufficientInformation: false,
-          source: "local-fallback"
+          source: batchResult.source || "gemini"
         },
         createdAt: now,
         updatedAt: now
@@ -225,7 +236,7 @@ export function useSpesMundi() {
 
     const newState = {
       ...current,
-      activities: [...newActivities, ...current.activities]
+      activities: [...newActivities, ...filteredPrevious]
     };
     syncState(newState);
     return newActivities.length;
