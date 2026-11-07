@@ -11,6 +11,65 @@ export default function App() {
   const [currentView, setCurrentView] = useState<ActiveView>("home");
   const spes = useSpesMundi();
 
+  if (spes.isHydrating) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        backgroundColor: "var(--bg-primary)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "2rem",
+        textAlign: "center"
+      }}>
+        <div style={{
+          maxWidth: "420px",
+          backgroundColor: "#ffffff",
+          borderRadius: "16px",
+          padding: "2.5rem 2rem",
+          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)",
+          border: "1px solid var(--border-light, #e2e8f0)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center"
+        }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            border: "3px solid #e2e8f0",
+            borderTopColor: "var(--accent-primary, #3b82f6)",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            marginBottom: "1.5rem"
+          }} />
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          <h2 style={{
+            fontFamily: "var(--font-serif, Georgia, serif)",
+            fontSize: "1.35rem",
+            color: "var(--text-main, #1e293b)",
+            marginBottom: "0.5rem"
+          }}>
+            Spes Mundi
+          </h2>
+          <p style={{
+            fontSize: "0.9rem",
+            color: "var(--text-muted, #64748b)",
+            lineHeight: "1.5",
+            margin: 0
+          }}>
+            Carregando formação educativa e sincronizando com o último salvamento...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "var(--bg-primary)", display: "flex", flexDirection: "column" }}>
       <Navbar

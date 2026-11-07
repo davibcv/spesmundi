@@ -140,6 +140,8 @@ export interface SpesMundiStorageState {
     apiKey?: string;
     model?: string;
   };
+  updatedAt?: string;
+  lastSyncedAt?: string;
 }
 
 export type ActiveView = 'home' | 'activities' | 'current-state' | 'knowledge-tree';

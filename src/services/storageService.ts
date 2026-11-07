@@ -74,6 +74,9 @@ export class StorageService {
 
   static saveState(state: SpesMundiStorageState): void {
     state.version = 1;
+    if (!state.updatedAt) {
+      state.updatedAt = new Date().toISOString();
+    }
     StorageService.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 

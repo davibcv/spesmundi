@@ -15,6 +15,7 @@ export function useSpesMundi() {
   const [currentUser, setCurrentUser] = useState<AuthUserProfile | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [isHydrating, setIsHydrating] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,6 +31,8 @@ export function useSpesMundi() {
         setAuthError(err?.message || "Erro na autenticacao via redirecionamento.");
       });
 
+    const minHydrationDelay = new Promise((resolve) => setTimeout(resolve, 1500));
+
     const unsubscribe = AuthService.subscribeToAuthChanges(async (user) => {
       setCurrentUser(user);
       setAuthLoading(false);
@@ -37,10 +40,23 @@ export function useSpesMundi() {
       if (user) {
         setIsSyncing(true);
         try {
-          const remoteData = await FirebaseSyncService.fetchRemoteState(user.uid);
+          const remoteDataPromise = FirebaseSyncService.fetchRemoteState(user.uid);
+          const [remoteData] = await Promise.all([remoteDataPromise, minHydrationDelay]);
+
           if (remoteData) {
-            StorageService.saveState(remoteData);
-            setState(remoteData);
+            const localState = StorageService.loadState();
+            const localTime = localState.updatedAt ? new Date(localState.updatedAt).getTime() : 0;
+            const remoteTime = remoteData.updatedAt ? new Date(remoteData.updatedAt).getTime() : 0;
+
+            // Se o local tiver carimbo mais novo que o remoto, preserva o local e sobe para o Firestore
+            if (localTime > remoteTime) {
+              await FirebaseSyncService.syncRemoteState(user.uid, localState);
+              setState(localState);
+            } else {
+              // Remoto e igual ou mais recente, hidrata localmente
+              StorageService.saveState(remoteData);
+              setState(remoteData);
+            }
           } else {
             const localState = StorageService.loadState();
             await FirebaseSyncService.syncRemoteState(user.uid, localState);
@@ -49,7 +65,11 @@ export function useSpesMundi() {
           console.warn("[useSpesMundi] Erro ao sincronizar estado com a nuvem:", err);
         } finally {
           setIsSyncing(false);
+          setIsHydrating(false);
         }
+      } else {
+        await minHydrationDelay;
+        setIsHydrating(false);
       }
     });
 
@@ -61,6 +81,7 @@ export function useSpesMundi() {
   }, []);
 
   const syncState = useCallback(async (newState: SpesMundiStorageState) => {
+    newState.updatedAt = new Date().toISOString();
     setState(newState);
     StorageService.saveState(newState);
 
@@ -284,6 +305,7 @@ export function useSpesMundi() {
     currentUser,
     isSyncing,
     authLoading,
+    isHydrating,
     authError,
     clearAuthError,
     saveAndSyncNow,
