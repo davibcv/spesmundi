@@ -31,6 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSaveAndSync
 }) => {
   const [saveFeedback, setSaveFeedback] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [showSuccessModal, setShowSuccessModal] = React.useState<boolean>(false);
 
   const handleManualSave = async () => {
     if (saveFeedback === "saving") return;
@@ -40,6 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         await onSaveAndSync();
       }
       setSaveFeedback("saved");
+      setShowSuccessModal(true);
       setTimeout(() => setSaveFeedback("idle"), 2500);
     } catch {
       setSaveFeedback("error");
@@ -284,6 +286,76 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <X size={15} />
           </button>
+        </div>
+      )}
+      {showSuccessModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          data-testid="save-success-modal"
+          onClick={() => setShowSuccessModal(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backdropFilter: "blur(2px)",
+            cursor: "pointer"
+          }}
+        >
+          <div
+            onClick={() => setShowSuccessModal(false)}
+            style={{
+              backgroundColor: "#ffffff",
+              padding: "1.75rem 2.25rem",
+              borderRadius: "16px",
+              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.2)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "0.75rem",
+              border: "1px solid var(--border-light, #e2e8f0)",
+              textAlign: "center"
+            }}
+          >
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                backgroundColor: "#dcfce7",
+                color: "#166534",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.6rem"
+              }}
+            >
+              ✓
+            </div>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "1.25rem",
+                fontWeight: 700,
+                color: "#1e293b"
+              }}
+            >
+              Salvo com sucesso
+            </h3>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "0.85rem",
+                color: "#64748b"
+              }}
+            >
+              Toque em qualquer lugar da tela para fechar
+            </p>
+          </div>
         </div>
       )}
     </>
