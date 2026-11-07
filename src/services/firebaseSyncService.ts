@@ -17,13 +17,19 @@ export class FirebaseSyncService {
 
     try {
       const docRef = doc(firestoreDb, this.COLLECTION_NAME, userId, "app", this.DATA_DOC_ID);
-      await setDoc(docRef, {
+      const writePromise = setDoc(docRef, {
         ...state,
         lastSyncedAt: new Date().toISOString()
       }, { merge: true });
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("Timeout na sincronização remota do Firestore (4s)")), 4000);
+      });
+
+      await Promise.race([writePromise, timeoutPromise]);
       return true;
     } catch (error) {
-      console.warn("[FirebaseSync] Falha ao sincronizar dados do usuario na nuvem:", error);
+      console.warn("[FirebaseSync] Falha ou timeout ao sincronizar dados na nuvem:", error);
       return false;
     }
   }

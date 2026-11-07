@@ -38,7 +38,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     setSaveFeedback("saving");
     try {
       if (onSaveAndSync) {
-        await onSaveAndSync();
+        const savePromise = onSaveAndSync();
+        const timeoutPromise = new Promise<void>((_, reject) => {
+          setTimeout(() => reject(new Error("Timeout de interface ao salvar")), 5000);
+        });
+        await Promise.race([savePromise, timeoutPromise]);
       }
       setSaveFeedback("saved");
       setShowSuccessModal(true);
