@@ -61,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header style={{
+      <header className="spes-navbar-desktop" style={{
         borderBottom: "1px solid var(--border-light)",
         backgroundColor: "rgba(255, 253, 249, 0.95)",
         backdropFilter: "blur(12px)",
@@ -114,7 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <nav style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+          <nav className="spes-nav-desktop-links" style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
@@ -362,6 +362,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       )}
+
+      {/* Barra de Navegação Inferior Móvel */}
+      <nav className="spes-bottom-nav-mobile" aria-label="Navegação móvel principal">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = currentView === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate(item.id)}
+              className={`spes-bottom-nav-item ${isActive ? "active" : ""}`}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <Icon size={20} color={isActive ? "var(--rose-deep)" : "var(--rose-burnished)"} />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
     </>
   );
 };

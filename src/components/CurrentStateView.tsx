@@ -32,9 +32,10 @@ export const CurrentStateView: React.FC<CurrentStateViewProps> = ({
     const nodePoints = node.totalPoints ?? node.points ?? 0;
 
     return (
-      <div key={node.id} style={{ marginLeft: depth > 0 ? '1.5rem' : '0', marginTop: '0.65rem' }}>
+      <div key={node.id} className={depth > 0 ? "spes-tree-indent" : ""} style={{ marginLeft: depth > 0 ? '1.5rem' : '0', marginTop: '0.65rem' }}>
         <div
           onClick={() => hasChildren && toggleNode(node.id)}
+          className="spes-tree-item-row"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -130,7 +131,7 @@ export const CurrentStateView: React.FC<CurrentStateViewProps> = ({
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
+    <div className="spes-view-container" style={{ maxWidth: '1000px', margin: '0 auto' }}>
       <div style={{ marginBottom: '2.5rem' }}>
         <h1 style={{ fontSize: '2.5rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
           Estado Atual do Desenvolvimento

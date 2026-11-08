@@ -93,9 +93,10 @@ export const KnowledgeTreeView: React.FC<KnowledgeTreeViewProps> = ({
     const isRoot = node.id === tree.id;
 
     return (
-      <div key={node.id} style={{ marginLeft: depth > 0 ? "1.5rem" : "0", marginTop: "0.45rem" }}>
+      <div key={node.id} className={depth > 0 ? "spes-tree-indent" : ""} style={{ marginLeft: depth > 0 ? "1.5rem" : "0", marginTop: "0.45rem" }}>
         <div
           onClick={() => setSelectedNodeId(node.id)}
+          className="spes-tree-item-row"
           style={{
             display: "flex",
             alignItems: "center",
@@ -147,6 +148,7 @@ export const KnowledgeTreeView: React.FC<KnowledgeTreeViewProps> = ({
               type="button"
               title="Adicionar subconjunto"
               onClick={(e) => handleOpenAdd(node, e)}
+              className="spes-tree-action-btn"
               style={{
                 padding: "0.3rem",
                 borderRadius: "6px",
@@ -210,7 +212,7 @@ export const KnowledgeTreeView: React.FC<KnowledgeTreeViewProps> = ({
   const isSelectedRoot = selectedNode.id === tree.id;
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2.5rem 1.5rem" }}>
+    <div className="spes-view-container">
       <div style={{ marginBottom: "2rem" }}>
         <h1 style={{ fontSize: "2.4rem", color: "var(--text-primary)", marginBottom: "0.5rem" }}>
           Arvore Organica do Conhecimento
@@ -220,7 +222,7 @@ export const KnowledgeTreeView: React.FC<KnowledgeTreeViewProps> = ({
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(320px, 1.2fr) minmax(280px, 0.8fr)", gap: "2rem", alignItems: "start" }}>
+      <div className="spes-tree-grid">
         <div style={{
           backgroundColor: "var(--bg-card)",
           borderRadius: "var(--radius-card)",
@@ -243,14 +245,12 @@ export const KnowledgeTreeView: React.FC<KnowledgeTreeViewProps> = ({
           </div>
         </div>
 
-        <div style={{
+        <div className="spes-tree-detail-panel" style={{
           backgroundColor: "var(--bg-card)",
           borderRadius: "var(--radius-card)",
           border: "1px solid var(--border-light)",
           padding: "1.75rem",
-          boxShadow: "var(--shadow-subtle)",
-          position: "sticky",
-          top: "2rem"
+          boxShadow: "var(--shadow-subtle)"
         }}>
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>

@@ -159,7 +159,7 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
   };
 
   return (
-    <div style={{ maxWidth: '880px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
+    <div className="spes-view-container" style={{ maxWidth: '880px', margin: '0 auto' }}>
       <div style={{ marginBottom: '2.5rem' }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
           <h1 style={{ fontSize: "2.5rem", color: "var(--text-primary)", margin: 0 }}>
@@ -193,13 +193,11 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({
         </p>
       </div>
 
-      <div style={{
+      <div className="spes-form-card" style={{
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border-light)',
         borderRadius: 'var(--radius-card)',
-        padding: '2rem',
-        boxShadow: 'var(--shadow-subtle)',
-        marginBottom: '2.5rem'
+        boxShadow: 'var(--shadow-subtle)'
       }}>
         <form onSubmit={handleStartAnalysis}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>

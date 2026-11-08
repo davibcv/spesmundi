@@ -100,7 +100,7 @@ export const InitialAlignmentModal: React.FC<InitialAlignmentModalProps> = ({
     onClose();
   };
   return (
-    <div style={{
+    <div className="spes-modal-backdrop" style={{
       position: 'fixed',
       top: 0,
       left: 0,
@@ -114,7 +114,7 @@ export const InitialAlignmentModal: React.FC<InitialAlignmentModalProps> = ({
       zIndex: 1000,
       padding: '1.5rem'
     }}>
-      <div style={{
+      <div className="spes-modal-sheet" style={{
         backgroundColor: 'var(--bg-card)',
         borderRadius: '16px',
         border: '1px solid var(--border-light)',
