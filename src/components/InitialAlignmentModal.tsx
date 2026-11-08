@@ -28,14 +28,28 @@ export const InitialAlignmentModal: React.FC<InitialAlignmentModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleParse = () => {
+  const handleDirectEvaluation = async () => {
     if (!inputText.trim()) return;
     const items = parseInitialAlignmentText(inputText);
+    if (items.length === 0) {
+      setErrorMsg("Nenhum aprendizado pôde ser identificado no texto fornecido.");
+      return;
+    }
     setParsedItems(items);
-    setEvaluationResult(null);
+    setIsEvaluating(true);
     setErrorMsg(null);
+    setEvaluationResult(null);
+    try {
+      const result = await AlignmentService.alignPastLearnings(items, childAge, tree);
+      setEvaluationResult(result);
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Erro na avaliação retrospectiva.");
+    } finally {
+      setIsEvaluating(false);
+    }
   };
 
+  
   const handleUpdateItem = (index: number, field: keyof InitialAlignmentRawItem, value: any) => {
     setParsedItems(prev => {
       const copy = [...prev];
@@ -200,8 +214,8 @@ export const InitialAlignmentModal: React.FC<InitialAlignmentModalProps> = ({
                 </button>
                 <button
                   type='button'
-                  onClick={handleParse}
-                  disabled={!inputText.trim()}
+                  onClick={handleDirectEvaluation}
+                  disabled={!inputText.trim() || isEvaluating}
                   style={{
                     padding: '0.6rem 1.4rem',
                     borderRadius: '8px',
@@ -214,7 +228,7 @@ export const InitialAlignmentModal: React.FC<InitialAlignmentModalProps> = ({
                     fontSize: '0.88rem'
                   }}
                 >
-                  Interpretar Itens
+                  Avaliar e Alinhar com IA
                 </button>
               </div>
             </div>

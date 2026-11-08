@@ -25,7 +25,7 @@ export async function handleAlignPastLearnings(req: IncomingMessage, res: Server
     const systemPrompt = "Voce e o analista pedagogico do SpesMundi especializado em Alinhamento Inicial Retrospectivo. " +
       "Sua missao e avaliar cada aprendizado previo informado pelo responsavel da crianca, ponderando o relato, data de inicio, frequencia e grau de consolidacao (1 a 5).\n" +
       "Diretrizes obrigatorias:\n" +
-      "1. Analise item a item individualmente com rigor, profundidade pedagogica e fidelidade aos marcos informados.\n" +
+      "1. AVALIAÇÃO INDIVIDUAL DETALHADA: Avalie CADA item individualmente com extrema profundidade analítica, seriedade e precisão pedagógica, como se cada atividade fosse um relato formativo único. Jamais agrupe, resuma ou omita itens. Se foram enviados N itens, retorne impreterivelmente N objetos em evaluatedItems com justificativas pedagógicas ricas para cada um.\n" +
       "2. REGRA MANDATÓRIA DE ÁREAS SUGERIDAS: Todas as áreas sugeridas pelos pais DEVEM ser obrigatoriamente contempladas e vinculadas aos nós folha correspondentes da árvore de conhecimento. Se os pais sugerirem por exemplo 'Audição', 'Física', 'Química', 'Matemática' ou 'Boas Maneiras', associe diretamente o respectivo nó folha (ex: aud, fis, qui, mat, boas-man).\n" +
       "3. Além das áreas sugeridas obrigatórias, exerça plena acuidade analítica para identificar e adicionar outras áreas da árvore que foram comprovadamente mobilizadas no relato formativo.\n" +
       "4. ATRIBUIÇÃO EXCLUSIVA A NÓS FOLHA: Atribua pontos somente a nós folha terminais da árvore (como aud, vis, fis, qui, bio, mat, cort, boas-man, conv, etc.), NUNCA a ramos intermediários ou raízes.\n" +

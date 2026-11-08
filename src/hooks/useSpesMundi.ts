@@ -48,12 +48,24 @@ export function useSpesMundi() {
             const localTime = localState.updatedAt ? new Date(localState.updatedAt).getTime() : 0;
             const remoteTime = remoteData.updatedAt ? new Date(remoteData.updatedAt).getTime() : 0;
 
-            // Se o local tiver carimbo mais novo que o remoto, preserva o local e sobe para o Firestore
-            if (localTime > remoteTime) {
+            const localHasActivities = (localState.activities?.length || 0) > 0;
+            const remoteHasActivities = (remoteData.activities?.length || 0) > 0;
+            const localHasRec = (localState.recurringActivities?.length || 0) > 0;
+            const remoteHasRec = (remoteData.recurringActivities?.length || 0) > 0;
+
+            // Se o dispositivo local for um estado virgem/sem dados e o remoto possuir atividades ou dados salvos,
+            // o estado remoto sempre deve prevalecer para restaurar os dados no novo dispositivo
+            const isLocalEmptyDefault = !localHasActivities && !localHasRec;
+
+            if (isLocalEmptyDefault && (remoteHasActivities || remoteHasRec || remoteTime > 0)) {
+              StorageService.saveState(remoteData);
+              setState(remoteData);
+            } else if (localTime > remoteTime) {
+              // O cliente local tem alteracoes ativas mais recentes do que a nuvem
               await FirebaseSyncService.syncRemoteState(user.uid, localState);
               setState(localState);
             } else {
-              // Remoto e igual ou mais recente, hidrata localmente
+              // Remoto e mais recente ou igual
               StorageService.saveState(remoteData);
               setState(remoteData);
             }
